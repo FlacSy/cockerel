@@ -1,11 +1,14 @@
 import os
 import logging
 import disnake
+import importlib
 from disnake.ext import commands
 from dotenv import load_dotenv
-from src.utils.storage import PlayerStorage
+from src.utils.storage import player_storage
+from dsplayer import PluginLoader
 
-player_storage = PlayerStorage()
+plugin_loader = PluginLoader()
+plugin_loader.debug_mode = True
 
 def main():
     """
@@ -28,9 +31,25 @@ def main():
         if filename.endswith(".py") and filename != '__init__.py':
             try:
                 bot.load_extension(f"src.cogs.{filename[:-3]}")
+                logging.info(f"Loaded extension {filename}")
             except Exception as e:
                 logging.error(f"Failed to load extension {filename}: {e}")
 
+    for filename in os.listdir("./src/events/"):
+        if filename.endswith(".py") and filename != '__init__.py':
+            try:
+                importlib.import_module(f"src.events.{filename[:-3]}")
+                logging.info(f"Loaded event {filename}")
+            except Exception as e:
+                logging.error(f"Failed to load extension {filename}: {e}")
+
+    logging.info("Bot is running...")
+    
+    @bot.event
+    async def on_ready():
+        logging.info(f"Bot is ready. Logged in as {bot.user}")
+        player_storage.set_bot(bot)
+        
     logging.info("Bot is running...")
     bot.run(TOKEN)
 
